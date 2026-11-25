@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expedição Botânica: Restauração & Taxonomia</title>
+<style>
+  :root {
+    --bg: #0f1f17;
+    --panel: #172d22;
+    --panel-light: #203c2e;
+    --text: #eaf5ee;
+    --muted: #9ebaa9;
+    --primary: #2ecc71;
+    --primary-dark: #219653;
+    --accent: #f39c12;
+    --danger: #e74c3c;
+    --info: #3498db;
+    --border: #2e523f;
+    --shadow: 0 10px 30px rgba(0,0,0,0.45);
+  }
+
+  * { box-sizing: border-box; user-select: none; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 14px;
+  }
+
+  .app-shell {
+    width: 100%;
+    max-width: 960px;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  /* Barra Superior */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: #0b1711;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .topbar-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar-actions { display: flex; gap: 8px; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    transition: transform 0.1s, background 0.2s, opacity 0.2s;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-sm {
+    padding: 7px 13px;
+    font-size: 0.85rem;
+    background: var(--panel-light);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-sm:hover:not(:disabled) { background: #2b4f3d; }
+
+  .btn-main {
+    padding: 13px 22px;
+    font-size: 1rem;
+    background: var(--primary);
+    color: #072212;
+  }
+  .btn-main:hover:not(:disabled) { background: #3ce081; }
+
+  .btn-secondary {
+    padding: 13px 22px;
+    font-size: 1rem;
+    background: var(--panel-light);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover:not(:disabled) { background: #2c523f; }
+
+  /* Telas */
+  .screen { display: none; padding: 24px; }
+  .screen.active { display: block; }
+
+  /* MENU INICIAL */
+  .hero {
+    text-align: center;
+    padding: 24px 16px;
+    background: radial-gradient(circle at top, #1f4231, #13261d);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    margin: 0 auto 20px;
+    max-width: 640px;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .feat-card {
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.9rem;
+  }
+  .feat-card strong { color: var(--primary); display: block; margin-bottom: 4px; }
+
+  /* HUD DO JOGO */
+  .hud-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .hud-pill {
+    background: #0d1c14;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .mission-banner {
+    background: #10261b;
+    border-left: 4px solid var(--accent);
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.92rem;
+  }
+
+  /* ÁREA PRINCIPAL: MAPA + PAINEL LATERAL */
+  .play-layout {
+    display: grid;
+    grid-template-columns: 1fr 270px;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 780px) {
+    .play-layout { grid-template-columns: 1fr; }
+  }
+
+  .canvas-wrap {
+    background: #0a140f;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  canvas {
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    border-radius: 8px;
+    background: #1b3b27;
+    display: block;
+  }
+
+  .dpad {
+    display: none;
+    grid-template-columns: repeat(3, 52px);
+    gap: 6px;
+    margin-top: 10px;
+  }
+  @media (max-width: 780px) { .dpad { display: grid; } }
+  .dpad button {
+    height: 46px;
+    background: var(--panel-light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-size: 1.1rem;
+  }
+
+  .side-panel {
+    background: #102319;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .side-panel h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    color: var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  .inv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 110px;
+  }
+  .inv-item {
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.84rem;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+  .tag-nativa { background: #14532d; color: #86efac; }
+  .tag-exotica { background: #7f1d1d; color: #fca5a5; }
+  .tag-toxica { background: #78350f; color: #fde047; }
+  .tag-ameacada { background: #1e3a8a; color: #93c5fd; }
+
+  .legend-box {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.45;
+    border-top: 1px dashed var(--border);
+    padding-top: 8px;
+  }
+
+  /* MODAL DE COLETA / QUIZ E REPLANTIO */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 12, 8, 0.82);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 50;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal-card {
+    background: var(--panel);
+    border: 2px solid var(--primary);
+    border-radius: 16px;
+    max-width: 620px;
+    width: 100%;
+    padding: 22px;
+    box-shadow: var(--shadow);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .modal-header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+
+  .clue-box {
+    background: #0e1e16;
+    border-left: 4px solid var(--primary);
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 0.92rem;
+  }
+
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  @media (max-width: 520px) { .quiz-options { grid-template-columns: 1fr; } }
+
+  .opt-btn {
+    padding: 12px;
+    background: var(--panel-light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    text-align: left;
+    font-size: 0.94rem;
+    font-style: italic;
+  }
+  .opt-btn:hover:not(:disabled) { border-color: var(--primary); background: #274a38; }
+
+  .feedback-banner {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    display: none;
+  }
+  .feedback-banner.ok { background: #123b24; border: 1px solid var(--primary); }
+  .feedback-banner.err { background: #451616; border: 1px solid var(--danger); }
+
+  /* CRÉDITOS E GUIA PEDAGÓGICO */
+  .edu-box {
+    background: #102319;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    line-height: 1.6;
+  }
+  .edu-box h2 { color: var(--primary); margin-top: 0; }
+  .edu-box h3 { color: var(--accent); margin-bottom: 6px; }
+  .edu-box ul { padding-left: 20px; }
+  .credits-footer {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0b1711;
+    color: var(--text);
+    border: 1px solid var(--primary);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: none;
+    z-index: 60;
+    box-shadow: var(--shadow);
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- BARRA SUPERIOR DE NAVEGAÇÃO -->
+  <div class="topbar">
+    <div class="topbar-title">🌿 Expedição Botânica: Restauração &amp; Taxonomia</div>
+    <div class="topbar-actions">
+      <button type="button" class="btn-sm" id="navMenu">🏠 Menu Inicial</button>
+      <button type="button" class="btn-sm" id="navPhases">🗺️ Fases</button>
+      <button type="button" class="btn-sm" id="navCredits">📚 Objetivos &amp; Créditos</button>
+    </div>
+  </div>
+
+  <!-- TELA 1: MENU INICIAL -->
+  <section class="screen active" id="screenMenu">
+    <div class="hero">
+      <h1>Expedição Botânica</h1>
+      <p>
+        Assuma o papel de um botânico explorador em campo! Percorra diferentes biomas, desvie de ameaças ambientais,
+        identifique famílias vegetais para coletar amostras e restaure áreas desmatadas escolhendo apenas as espécies nativas adequadas.
+      </p>
+      <div class="menu-buttons">
+        <button type="button" class="btn-main" id="btnNewGame">🌱 Novo Jogo (Iniciar Expedição)</button>
+        <button type="button" class="btn-secondary" id="btnContinue" disabled>▶️ Continuar Missão Salva</button>
+        <button type="button" class="btn-secondary" id="btnSelectPhase">🗺️ Selecionar Fase (1 a 6)</button>
+        <button type="button" class="btn-secondary" id="btnGoCredits">📖 Guia Educacional &amp; Créditos</button>
+      </div>
+    </div>
+
+    <div class="features-grid">
+      <div class="feat-card">
+        <strong>🔍 Coleta com Identificação</strong>
+        Para coletar cada planta no mapa, responda pistas morfológicas (fases 1–5 introdutórias e fase 6 avançada).
+      </div>
+      <div class="feat-card">
+        <strong>⚠️ Classificação Ecológica</strong>
+        Diferencie plantas <em>Nativas</em>, <em>Ameaçadas de Extinção</em>, <em>Tóxicas</em> e <em>Exóticas Invasoras</em>.
+      </div>
+      <div class="feat-card">
+        <strong>🪴 Fase das Plantas Carnívoras</strong>
+        Explore o brejo ácido na Fase 4 com <em>Dionaea muscipula</em> e <em>Nepenthes</em> spp. e suas armadilhas foliares!
+      </div>
+      <div class="feat-card">
+        <strong>🌳 Restauração Ecológica</strong>
+        Vá até as clareiras desmatadas e replante apenas espécies nativas. Plantar exóticas invasoras degrada o solo!
+      </div>
+    </div>
+  </section>
+
+  <!-- TELA 2: SELEÇÃO DE FASES -->
+  <section class="screen" id="screenPhases">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h2 style="margin:0; color:var(--primary);">🗺️ Mapa de Expedições (6 Fases)</h2>
+      <button type="button" class="btn-sm" id="backFromPhases">⬅ Voltar ao Menu</button>
+    </div>
+    <p style="color:var(--muted); margin-top:0;">
+      As <strong>5 primeiras fases</strong> trazem pistas morfológicas mais diretas e introdutórias. A <strong>Fase 6</strong> exige análise taxonômica avançada!
+    </p>
+    <div class="features-grid" id="phasesGrid"></div>
+  </section>
+
+  <!-- TELA 3: JOGO (MAPA + INVENTÁRIO) -->
+  <section class="screen" id="screenGame">
+    <div class="hud-bar">
+      <div class="hud-pill" id="hudPhase">Fase 1/6</div>
+      <div class="hud-pill" id="hudHealth">❤️ Integridade: 100%</div>
+      <div class="hud-pill" id="hudCollected">🎒 Coletadas: 0/3</div>
+      <div class="hud-pill" id="hudRestored">🌱 Restauradas: 0/2</div>
+      <div class="hud-pill" id="hudScore">⭐ Pontos: 0</div>
+    </div>
+
+    <div class="mission-banner">
+      <span id="missionText">Objetivo: Colete as plantas no mapa (setas ou WASD) e restaure as áreas desmatadas!</span>
+      <button type="button" class="btn-sm" id="btnQuitToMenu">💾 Salvar e Voltar ao Menu</button>
+    </div>
+
+    <div class="play-layout">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="560" height="400"></canvas>
+        <div class="dpad">
+          <div></div><button type="button" data-dir="up">⬆️</button><div></div>
+          <button type="button" data-dir="left">⬅️</button><button type="button" data-dir="down">⬇️</button><button type="button" data-dir="right">➡️</button>
+        </div>
+        <div style="font-size:0.8rem; color:var(--muted); margin-top:6px;">
+          Use as <strong>setas do teclado</strong> ou <strong>W A S D</strong> para mover o botânico. Encoste nas plantas para estudar/coletar e nas áreas marrons para replantar.
+        </div>
+      </div>
+
+      <aside class="side-panel">
+        <h3>🎒 Mochila de Amostras</h3>
+        <div class="inv-list" id="inventoryList">
+          <div style="color:var(--muted); font-size:0.84rem;">Nenhuma amostra coletada ainda. Aproxime-se de uma planta no mapa!</div>
+        </div>
+
+        <div class="legend-box">
+          <strong>Legenda do Mapa:</strong><br>
+          🧑‍🔬 Você (Botânico Explorador)<br>
+          🌿 Planta Silvestre (Estudar &amp; Coletar)<br>
+          🟫 Solo Desmatado (Área de Replantio)<br>
+          🔥 Foco de Incêndio / Praga (Inimigo: -20% saúde)
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- TELA 4: OBJETIVOS EDUCACIONAIS, REFERÊNCIAS E CRÉDITOS -->
+  <section class="screen" id="screenCredits">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h2 style="margin:0; color:var(--primary);">📚 Guia Educacional &amp; Créditos</h2>
+      <button type="button" class="btn-sm" id="backFromCredits">⬅ Voltar ao Menu</button>
+    </div>
+
+    <div class="edu-box">
+      <h2>Sobre o Recurso Educacional</h2>
+      <p>
+        <strong>Expedição Botânica: Restauração &amp; Taxonomia</strong> é um jogo educacional digital voltado ao ensino de Botânica,
+        Sistemática Vegetal e Educação Ambiental. Nele, estudantes assumem o papel de botânicos em campo que precisam identificar
+        famílias vegetais a partir de caracteres morfológicos reais, distinguir espécies nativas, ameaçadas de extinção, tóxicas
+        e exóticas invasoras, e tomar decisões responsáveis de restauração ecológica em áreas degradadas.
+      </p>
+
+      <h3>🎯 Objetivos de Aprendizagem</h3>
+      <ul>
+        <li>Aplicar critérios morfológicos (flores, folhas, caules, frutos e armadilhas foliares) para identificar famílias botânicas.</li>
+        <li>Compreender conceitos ecológicos essenciais: endemismo, espécies ameaçadas de extinção, toxicidade vegetal e bioinvasão por exóticas.</li>
+        <li>Avaliar os impactos do desmatamento e praticar o manejo adequado na restauração de ecossistemas.</li>
+        <li>Desenvolver tomada de decisão crítica baseada em evidências científicas e feedback imediato.</li>
+      </ul>
+
+      <h3>🧭 Referências Curriculares e Pedagógicas</h3>
+      <ul>
+        <li>
+          <strong>Base Nacional Comum Curricular (BNCC — Ciências da Natureza e suas Tecnologias):</strong>
+          articulado às habilidades <strong>EM13CNT202</strong> e <strong>EM13CNT206</strong> (diversidade dos seres vivos, critérios de
+          classificação biológica, conservação da biodiversidade e impactos socioambientais) e <strong>EM13CNT301</strong> (investigação científica e argumentação).
+        </li>
+        <li>
+          <strong>Ensino de Ciências por Investigação (Carvalho, 2013; Sasseron, 2015) e Modelo TPACK (Mishra &amp; Koehler, 2006):</strong>
+          estrutura-se na resolução ativa de problemas ambientais e taxonômicos com mediação tecnológica intencional.
+        </li>
+      </ul>
+
+      <div class="credits-footer">
+        <strong>Criadoras:</strong> Amanda Luisa Paz Maia e Layanne Maria Feitosa de Oliveira<br>
+        <strong>Universidade:</strong> Universidade Federal Rural de Pernambuco (UFRPE)<br>
+        <strong>Ano:</strong> 2026
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL DE IDENTIFICAÇÃO TAXONÔMICA (COLETA) -->
+<div class="modal-backdrop" id="collectModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2 id="cmTitle">🔍 Estudo de Espécime em Campo</h2>
+      <span id="cmDifficulty" style="font-size:0.8rem; color:var(--accent); font-weight:700;"></span>
+    </div>
+    <p id="cmIntro" style="margin-top:0; font-size:0.93rem; color:var(--muted);"></p>
+    <div id="cmClues"></div>
+    <button type="button" class="btn-sm" id="cmHintBtn" style="margin-top:6px;">🔎 Solicitar 2ª pista morfológica</button>
+
+    <p style="font-weight:700; margin:14px 0 6px;">Identifique a família botânica para coletar a amostra:</p>
+    <div class="quiz-options" id="cmOptions"></div>
+
+    <div class="feedback-banner" id="cmFeedback"></div>
+    <button type="button" class="btn-main" id="cmCloseBtn" style="display:none; margin-top:12px; width:100%;">Continuar Expedição ➔</button>
+  </div>
+</div>
+
+<!-- MODAL DE REPLANTIO / RESTAURAÇÃO ECOLÓGICA -->
+<div class="modal-backdrop" id="plantModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>🌱 Restauração de Área Desmatada</h2>
+      <button type="button" class="btn-sm" id="pmCancel">Fechar ✕</button>
+    </div>
+    <p style="margin-top:0; font-size:0.93rem;">
+      Este trecho sofreu desmatamento e precisa de recomposição vegetal. Escolha uma amostra da sua mochila para replantar.
+      <strong>Atenção:</strong> plantar espécies <em>exóticas invasoras</em> ou <em>inadequadas</em> compromete a restauração ecológica!
+    </p>
+    <div id="pmChoices" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;"></div>
+    <div class="feedback-banner" id="pmFeedback"></div>
+    <button type="button" class="btn-main" id="pmDoneBtn" style="display:none; margin-top:12px; width:100%;">Voltar ao Mapa ➔</button>
+  </div>
+</div>
+
+<!-- MODAL DE FIM DE FASE / GAME OVER -->
+<div class="modal-backdrop" id="endModal">
+  <div class="modal-card" style="text-align:center;">
+    <h2 id="emTitle" style="font-size:1.5rem; margin-top:0;">🎉 Missão Concluída!</h2>
+    <p id="emDesc" style="font-size:1rem; line-height:1.55;"></p>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px;">
+      <button type="button" class="btn-main" id="emNextBtn">Próxima Fase ➔</button>
+      <button type="button" class="btn-secondary" id="emRetryBtn">🔄 Repetir Fase</button>
+      <button type="button" class="btn-secondary" id="emMenuBtn">🏠 Menu Inicial</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ================= BANCO DE DADOS BOTÂNICO E AMBIENTAL (6 FASES) =================
+// Fases 1 a 5: pistas mais simples e diretas. Fase 6: pista taxonômica avançada.
+const PHASES = [
+  {
+    id: 1,
+    title: "Fase 1: Mata Atlântica — Primeiras Coletas",
+    level: "Nível Introdutório",
+    bg: "#1b3d28",
+    description: "Identifique plantas conhecidas do bioma, colete amostras e restaure as 2 clareiras desmatadas.",
+    restoresNeeded: 2,
+    enemies: 2,
+    plants: [
+      {
+        species: "Pau-brasil (Paubrasilia echinata)",
+        family: "Fabaceae",
+        status: "Nativa • Ameaçada de Extinção",
+        statusType: "ameacada",
+        canRestore: true,
+        clues: [
+          "Árvore nativa do Brasil com fruto do tipo vagem (legume) e folhas compostas bipinadas.",
+          "Suas raízes formam nódulos com bactérias fixadoras de nitrogênio; madeira avermelhada historicamente explorada."
+        ],
+        options: ["Fabaceae", "Poaceae", "Cactaceae", "Araceae"],
+        eduNote: "Excelente! O pau-brasil é uma espécie nativa ameaçada de extinção fundamental na restauração da Mata Atlântica."
+      },
+      {
+        species: "Ipê-amarelo / Pitangueira (Eugenia uniflora)",
+        family: "Myrtaceae",
+        status: "Nativa • Frutífera Silvestre",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Arbusto/árvore nativa com folhas simples aromáticas (com pontinhos translúcidos) e flores com muitos estames.",
+          "Produz frutos carnosos vermelhos (bagas) coroados pelos restos do cálice, muito atrativos para aves dispersoras."
+        ],
+        options: ["Myrtaceae", "Orchidaceae", "Arecaceae", "Lauraceae"],
+        eduNote: "Perfeito! Espécies de Myrtaceae atraem fauna dispersora e aceleram a regeneração florestal."
+      },
+      {
+        species: "Capim-braquiária (Urochloa decumbens)",
+        family: "Poaceae",
+        status: "Exótica Invasora",
+        statusType: "exotica",
+        canRestore: false,
+        clues: [
+          "Gramínea africana com caule em colmo articulado (nós e entrenós) e folhas longas paralelinérveas.",
+          "Introduzida como pastagem, alastra-se rapidamente e sufoca mudas de árvores nativas em áreas desmatadas."
+        ],
+        options: ["Poaceae", "Rubiaceae", "Malvaceae", "Piperaceae"],
+        eduNote: "Atenção! Como é uma exótica invasora, você deve coletá-la apenas para estudo/controle — nunca plantá-la na restauração!"
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: "Fase 2: Caatinga — Adaptações à Seca",
+    level: "Nível Introdutório",
+    bg: "#3b321d",
+    description: "Explore a flora xerófila nordestina e recupere áreas degradadas pela desertificação.",
+    restoresNeeded: 2,
+    enemies: 2,
+    plants: [
+      {
+        species: "Mandacaru (Cereus jamacaru)",
+        family: "Cactaceae",
+        status: "Nativa • Endêmica do Brasil",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Planta com caule verde suculento (cladódio) que armazena água e espinhos agrupados em aréolas.",
+          "Suas flores noturnas grandes e frutos carnosos sustentam a fauna da Caatinga na estiagem."
+        ],
+        options: ["Cactaceae", "Bromeliaceae", "Asteraceae", "Lauraceae"],
+        eduNote: "Correto! Cactaceae é família-chave da Caatinga, adaptada ao armazenamento hídrico."
+      },
+      {
+        species: "Caroá / Bromélia-nativa (Neoglaziovia variegata)",
+        family: "Bromeliaceae",
+        status: "Nativa • Fibra Ecológica",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Folhas rígidas dispostas em roseta com escamas absorventes e brácteas florais avermelhadas.",
+          "Acumula umidade e fornece micro-hábitat e fibras resistentes no semiárido."
+        ],
+        options: ["Bromeliaceae", "Fabaceae", "Piperaceae", "Annonaceae"],
+        eduNote: "Muito bem! Bromélias nativas retêm água e protegem o solo da erosão."
+      },
+      {
+        species: "Algaroba (Prosopis juliflora)",
+        family: "Fabaceae",
+        status: "Exótica Invasora no Semiárido",
+        statusType: "exotica",
+        canRestore: false,
+        clues: [
+          "Árvore espinhosa com vagens adocicadas, originária de regiões áridas fora do Brasil.",
+          "Consome muita água subterrânea e invade margens de rios da Caatinga, deslocando espécies nativas."
+        ],
+        options: ["Fabaceae", "Arecaceae", "Orchidaceae", "Myrtaceae"],
+        eduNote: "Boa identificação! Apesar de ser uma leguminosa, a algaroba é exótica invasora na Caatinga."
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: "Fase 3: Trilha das Plantas Tóxicas e Medicinais",
+    level: "Nível Introdutório",
+    bg: "#1e352f",
+    description: "Nem toda planta verde é inofensiva! Identifique espécies tóxicas e nativas para recompor a mata ciliar.",
+    restoresNeeded: 2,
+    enemies: 3,
+    plants: [
+      {
+        species: "Comigo-ninguém-pode (Dieffenbachia seguine)",
+        family: "Araceae",
+        status: "Tóxica • Ornamental",
+        statusType: "toxica",
+        canRestore: false,
+        clues: [
+          "Possui inflorescência em espádice envolta por espata e folhas largas manchadas.",
+          "Contém cristais de oxalato de cálcio (ráfides) que causam irritação severa e edema nas mucosas se ingeridos."
+        ],
+        options: ["Araceae", "Poaceae", "Cactaceae", "Asteraceae"],
+        eduNote: "Acertou! Espécies tóxicas ornamentais não devem ser usadas em reflorestamento de mata ciliar."
+      },
+      {
+        species: "Mamona (Ricinus communis)",
+        family: "Euphorbiaceae",
+        status: "Tóxica & Exótica Invasora",
+        statusType: "toxica",
+        canRestore: false,
+        clues: [
+          "Arbusto com folhas palmadas lobadas e frutos espinhosos (cápsulas tricocas) com sementes rajadas.",
+          "Suas sementes contêm ricina, uma toxina potente; ocupa terrenos baldios e áreas perturbadas."
+        ],
+        options: ["Euphorbiaceae", "Myrtaceae", "Rubiaceae", "Bromeliaceae"],
+        eduNote: "Identificação certeira! A mamona é exótica e altamente tóxica."
+      },
+      {
+        species: "Jenipapeiro (Genipa americana)",
+        family: "Rubiaceae",
+        status: "Nativa • Mata Ciliar",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Árvore nativa com folhas simples opostas e uma estípula triangular entre os pecíolos (interpeciolar).",
+          "Tolera solos encharcados nas margens de rios e produz frutos grandes consumidos pela fauna e populações tradicionais."
+        ],
+        options: ["Rubiaceae", "Orchidaceae", "Lauraceae", "Annonaceae"],
+        eduNote: "Excelente! O jenipapeiro é ideal para restaurar matas ciliares degradadas."
+      },
+      {
+        species: "Palmeira-juçara (Euterpe edulis)",
+        family: "Arecaceae",
+        status: "Nativa • Ameaçada de Extinção",
+        statusType: "ameacada",
+        canRestore: true,
+        clues: [
+          "Palmeira de caule cilíndrico único (estipe) com coroa de folhas pinadas no topo.",
+          "Ameaçada pela extração ilegal de palmito; seus frutos roxos alimentam tucanos, jacus e antas."
+        ],
+        options: ["Arecaceae", "Malvaceae", "Asteraceae", "Piperaceae"],
+        eduNote: "Perfeito! Replantar a palmeira-juçara ajuda a salvar uma espécie-chave ameaçada."
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: "Fase 4: O Brejo das Plantas Carnívoras",
+    level: "Nível Introdutório • Fase Temática",
+    bg: "#16332b",
+    description: "Bem-vindo ao solo turfoso pobre em nitrogênio! Estude as plantas carnívoras e recupere o brejo degradado.",
+    restoresNeeded: 2,
+    enemies: 3,
+    plants: [
+      {
+        species: "Vênus Papa-moscas (Dionaea muscipula)",
+        family: "Droseraceae",
+        status: "Carnívora • Exótica (América do Norte) • Ameaçada",
+        statusType: "ameacada",
+        canRestore: false,
+        clues: [
+          "Planta carnívora com folhas modificadas em armadilha articulada ('boca' com dentes marginais e pelos sensitivos).",
+          "Fecha rapidamente quando um inseto toca seus tricomas gatilho para complementar nutrientes ausentes no solo ácido."
+        ],
+        options: ["Droseraceae", "Orchidaceae", "Fabaceae", "Poaceae"],
+        eduNote: "Isso! Dionaea muscipula captura insetos por tigmonastia, mas é nativa dos EUA — não deve ser solta em brejos brasileiros!"
+      },
+      {
+        species: "Planta-jarro Tropical (Nepenthes spp.)",
+        family: "Nepenthaceae",
+        status: "Carnívora • Exótica (Ásia/Oceania)",
+        statusType: "exotica",
+        canRestore: false,
+        clues: [
+          "Planta carnívora trepadeira cujas pontas das folhas formam jarros pendentes (ascídios) com líquido digestivo.",
+          "Atrai insetos com néctar na borda escorregadia (peristômio), digerindo-os no fundo do jarro."
+        ],
+        options: ["Nepenthaceae", "Cactaceae", "Arecaceae", "Malvaceae"],
+        eduNote: "Muito bem! As Nepenthes têm armadilhas passivas em jarro, mas são exóticas da Ásia."
+      },
+      {
+        species: "Orquídea-do-brejo (Cattleya / Habenaria sp.)",
+        family: "Orchidaceae",
+        status: "Nativa • Sensível à Drenagem",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Flor com simetria bilateral (zigomorfa) e uma pétala inferior modificada em labelo vistoso.",
+          "Suas raízes possuem velame e dependem de fungos micorrízicos em áreas úmidas preservadas."
+        ],
+        options: ["Orchidaceae", "Asteraceae", "Myrtaceae", "Euphorbiaceae"],
+        eduNote: "Acertou! Orquídeas nativas são bioindicadoras da qualidade ambiental de áreas úmidas."
+      },
+      {
+        species: "Orvalho-do-sol Nativo (Drosera communis)",
+        family: "Droseraceae",
+        status: "Carnívora Nativa • Brejos Brasileiros",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Pequena planta carnívora nativa do Brasil com folhas em roseta cobertas por tentáculos glandulares pegajosos.",
+          "Brilha ao sol como gotas de orvalho para atrair e prender pequenos mosquitos em solos pobres."
+        ],
+        options: ["Droseraceae", "Lauraceae", "Rubiaceae", "Araceae"],
+        eduNote: "Sensacional! Drosera communis é uma carnívora nativa brasileira ideal para restaurar o brejo ácido."
+      }
+    ]
+  },
+  {
+    id: 5,
+    title: "Fase 5: Floresta Submontana — Polinizadores e Flora",
+    level: "Nível Introdutório",
+    bg: "#193829",
+    description: "Última etapa introdutória! Proteja as relações entre flores, polinizadores e dispersores.",
+    restoresNeeded: 2,
+    enemies: 3,
+    plants: [
+      {
+        species: "Hibisco-nativo / Algodoeiro-bravo (Hibiscus pernambucensis)",
+        family: "Malvaceae",
+        status: "Nativa • Restinga e Manguezal",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Flor vistosa com estames unidos formando um tubo central ao redor do estilete (androceu monadelfo).",
+          "Possui mucilagem nos tecidos e estabiliza margens de estuários e restingas."
+        ],
+        options: ["Malvaceae", "Poaceae", "Orchidaceae", "Cactaceae"],
+        eduNote: "Perfeito! O tubo estaminal monadelfo é a assinatura clássica de Malvaceae."
+      },
+      {
+        species: "Margarida-do-campo / Girassol-nativo (Bidens / Wedelia sp.)",
+        family: "Asteraceae",
+        status: "Nativa • Atrativa de Abelhas",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Inflorescência em capítulo reunindo dezenas de flores minúsculas em um receptáculo comum.",
+          "Fruto seco do tipo cipsela com pápus que facilita a dispersão pelo vento em áreas abertas."
+        ],
+        options: ["Asteraceae", "Arecaceae", "Fabaceae", "Piperaceae"],
+        eduNote: "Excelente! Asteraceae fornece néctar e pólen essenciais para polinizadores nativos."
+      },
+      {
+        species: "Pimenta-de-macaco (Piper aduncum)",
+        family: "Piperaceae",
+        status: "Nativa • Espécie Pioneira",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Arbusto com nós caulinares inchados/articulados e inflorescência em espiga fina e curva.",
+          "Espécie pioneira que cresce rápido em clareiras e atrai morcegos frugívoros que trazem sementes de outras árvores."
+        ],
+        options: ["Piperaceae", "Bromeliaceae", "Myrtaceae", "Euphorbiaceae"],
+        eduNote: "Ótima escolha! Piper aduncum é uma pioneira estratégica na restauração florestal."
+      }
+    ]
+  },
+  {
+    id: 6,
+    title: "Fase 6: Desafio Final — Taxonomia Avançada & Bioinvasão",
+    level: "Nível Avançado (Pistas Complexas)",
+    bg: "#132920",
+    description: "Pistas morfológicas técnicas! Identifique corretamente as Magnoliídeas e Eudicotiledôneas para concluir a expedição.",
+    restoresNeeded: 3,
+    enemies: 4,
+    plants: [
+      {
+        species: "Canela-sassafrás (Ocotea odorifera)",
+        family: "Lauraceae",
+        status: "Nativa • Ameaçada de Extinção",
+        statusType: "ameacada",
+        canRestore: true,
+        clues: [
+          "Magnoliídea arbórea com células oleíferas aromáticas, anteras de deiscência valvar (por pequenas tampas) e fruto baga assentado em cúpula.",
+          "Sobre-explorada no passado para extração de óleo essencial (safrol), hoje protegida por lei."
+        ],
+        options: ["Lauraceae", "Annonaceae", "Rubiaceae", "Malvaceae"],
+        eduNote: "Brilhante! Deiscência valvar das anteras e fruto em cúpula diagnosticam Lauraceae."
+      },
+      {
+        species: "Araticum-do-mato (Annona cacans)",
+        family: "Annonaceae",
+        status: "Nativa • Zoocórica",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Magnoliídea com folhas alternas dísticas (em um plano), flores trímeras com pétalas carnosas e numerosos estames/carpelos livres.",
+          "Fruto sincárpico carnoso com sementes de endosperma ruminado disperso por mamíferos silvestres."
+        ],
+        options: ["Annonaceae", "Myrtaceae", "Orchidaceae", "Asteraceae"],
+        eduNote: "Excelente leitura morfológica! Flores trímeras carnosas e filotaxia dística são típicas de Annonaceae."
+      },
+      {
+        species: "Jaqueira (Artocarpus heterophyllus)",
+        family: "Moraceae",
+        status: "Exótica Invasora na Mata Atlântica",
+        statusType: "exotica",
+        canRestore: false,
+        clues: [
+          "Árvore lactescente de origem asiática com estípulas terminais envolventes que deixam cicatriz anelar no ramo e sincarpo gigante caulifloro.",
+          "Forma densos 'jaqueirais' que bloqueiam a luz e impedem a regeneração de árvores nativas."
+        ],
+        options: ["Moraceae", "Fabaceae", "Lauraceae", "Rubiaceae"],
+        eduNote: "Perfeito! Apesar de produzir frutos comestíveis, a jaqueira é exótica invasora severa na Mata Atlântica."
+      },
+      {
+        species: "Seringueira / Mandiocaba-nativa (Manihot sp.)",
+        family: "Euphorbiaceae",
+        status: "Nativa • Pioneira",
+        statusType: "nativa",
+        canRestore: true,
+        clues: [
+          "Eudicotiledônea lactescente com folhas alternas lobadas, flores diclinas reduzidas e fruto esquizocarpo tricoca de deiscência explosiva.",
+          "Coloniza bordas florestais e protege o solo exposto contra radiação intensa."
+        ],
+        options: ["Euphorbiaceae", "Piperaceae", "Araceae", "Bromeliaceae"],
+        eduNote: "Mestre taxonomista! Cápsula tricoca explosiva e látex confirmam Euphorbiaceae."
+      }
+    ]
+  }
+];
+
+// ================= ESTADO E PERSISTÊNCIA =================
+const SAVE_KEY = "expedicao_botanica_save_v1";
+let state = {
+  phaseIndex: 0,
+  unlockedPhase: 0,
+  score: 0,
+  health: 100,
+  inventory: [],
+  collectedInPhase: 0,
+  restoredInPhase: 0
+};
+
+let mapEntities = {
+  player: { x: 40, y: 200, size: 22, speed: 14 },
+  plants: [],
+  plots: [],
+  enemies: []
+};
+
+let activeCollectPlant = null;
+let activePlotIndex = null;
+let animFrame = null;
+
+// ================= NAVEGAÇÃO ENTRE TELAS =================
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (id !== "screenGame" && animFrame) {
+    cancelAnimationFrame(animFrame);
+    animFrame = null;
+  }
+  updateContinueButton();
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = "none"; }, 2600);
+}
+
+function saveProgress() {
+  const payload = {
+    phaseIndex: state.phaseIndex,
+    unlockedPhase: state.unlockedPhase,
+    score: state.score
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+  updateContinueButton();
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function updateContinueButton() {
+  const saved = loadProgress();
+  const btn = document.getElementById("btnContinue");
+  if (saved) {
+    btn.disabled = false;
+    btn.textContent = `▶️ Continuar Missão (Fase ${saved.phaseIndex + 1}/6 • ${saved.score} pts)`;
+  } else {
+    btn.disabled = true;
+    btn.textContent = "▶️ Continuar Missão Salva";
+  }
+}
+
+// Botões de navegação
+document.getElementById("navMenu").addEventListener("click", () => showScreen("screenMenu"));
+document.getElementById("navPhases").addEventListener("click", () => { renderPhasesGrid(); showScreen("screenPhases"); });
+document.getElementById("navCredits").addEventListener("click", () => showScreen("screenCredits"));
+document.getElementById("btnGoCredits").addEventListener("click", () => showScreen("screenCredits"));
+document.getElementById("backFromPhases").addEventListener("click", () => showScreen("screenMenu"));
+document.getElementById("backFromCredits").addEventListener("click", () => showScreen("screenMenu"));
+
+document.getElementById("btnNewGame").addEventListener("click", () => {
+  state = { phaseIndex: 0, unlockedPhase: 0, score: 0, health: 100, inventory: [], collectedInPhase: 0, restoredInPhase: 0 };
+  saveProgress();
+  startPhase(0);
+});
+
+document.getElementById("btnContinue").addEventListener("click", () => {
+  const saved = loadProgress();
+  if (saved) {
+    state.phaseIndex = saved.phaseIndex || 0;
+    state.unlockedPhase = saved.unlockedPhase || 0;
+    state.score = saved.score || 0;
+    startPhase(state.phaseIndex);
+  }
+});
+
+document.getElementById("btnSelectPhase").addEventListener("click", () => {
+  renderPhasesGrid();
+  showScreen("screenPhases");
+});
+
+document.getElementById("btnQuitToMenu").addEventListener("click", () => {
+  saveProgress();
+  showToast("Progresso salvo!");
+  showScreen("screenMenu");
+});
+
+function renderPhasesGrid() {
+  const grid = document.getElementById("phasesGrid");
+  grid.innerHTML = "";
+  PHASES.forEach((p, idx) => {
+    const card = document.createElement("div");
+    card.className = "feat-card";
+    card.innerHTML = `
+      <strong>${p.title}</strong>
+      <div style="color:var(--accent); font-size:0.8rem; font-weight:700; margin-bottom:6px;">${p.level}</div>
+      <p style="margin:0 0 10px; color:var(--muted); font-size:0.85rem;">${p.description}</p>
+      <button type="button" class="btn-sm" style="width:100%;">Jogar Fase ${idx + 1} ➔</button>
+    `;
+    card.querySelector("button").addEventListener("click", () => startPhase(idx));
+    grid.appendChild(card);
+  });
+}
+
+// ================= INICIALIZAÇÃO DA FASE E MAPA =================
+function startPhase(idx) {
+  state.phaseIndex = idx;
+  state.health = 100;
+  state.inventory = [];
+  state.collectedInPhase = 0;
+  state.restoredInPhase = 0;
+
+  const phase = PHASES[idx];
+  showScreen("screenGame");
+
+  // Posiciona jogador
+  mapEntities.player = { x: 46, y: 200, r: 14, speed: 16 };
+
+  // Posiciona plantas no lado esquerdo/central do mapa
+  const plantSpots = [
+    { x: 150, y: 90 }, { x: 240, y: 290 }, { x: 170, y: 330 }, { x: 290, y: 120 }
+  ];
+  mapEntities.plants = phase.plants.map((pl, i) => ({
+    ...pl,
+    id: i,
+    x: plantSpots[i % plantSpots.length].x,
+    y: plantSpots[i % plantSpots.length].y,
+    collected: false
+  }));
+
+  // Posiciona áreas desmatadas (replantio) no lado direito
+  const plotSpots = [
+    { x: 455, y: 105 }, { x: 455, y: 285 }, { x: 385, y: 195 }
+  ];
+  mapEntities.plots = [];
+  for (let i = 0; i < phase.restoresNeeded; i++) {
+    mapEntities.plots.push({
+      id: i,
+      x: plotSpots[i].x,
+      y: plotSpots[i].y,
+      restored: false,
+      plantedName: ""
+    });
+  }
+
+  // Posiciona ameaças ambientais móveis (fogo/praga)
+  mapEntities.enemies = [];
+  for (let i = 0; i < phase.enemies; i++) {
+    mapEntities.enemies.push({
+      x: 210 + i * 85,
+      y: 70 + (i % 2) * 220,
+      vx: (i % 2 === 0 ? 1.5 : -1.5),
+      vy: (i % 2 === 0 ? 1.2 : -1.3),
+      r: 13,
+      cooldown: 0
+    });
+  }
+
+  updateHUD();
+  renderInventory();
+  if (animFrame) cancelAnimationFrame(animFrame);
+  gameLoop();
+}
+
+function updateHUD() {
+  const phase = PHASES[state.phaseIndex];
+  document.getElementById("hudPhase").textContent = `Fase ${state.phaseIndex + 1}/6`;
+  document.getElementById("hudHealth").textContent = `❤️ Integridade: ${state.health}%`;
+  document.getElementById("hudCollected").textContent = `🎒 Coletadas: ${state.collectedInPhase}/${phase.plants.length}`;
+  document.getElementById("hudRestored").textContent = `🌱 Restauradas: ${state.restoredInPhase}/${phase.restoresNeeded}`;
+  document.getElementById("hudScore").textContent = `⭐ Pontos: ${state.score}`;
+  document.getElementById("missionText").textContent = `${phase.title}: ${phase.description}`;
+}
+
+function renderInventory() {
+  const list = document.getElementById("inventoryList");
+  if (state.inventory.length === 0) {
+    list.innerHTML = `<div style="color:var(--muted); font-size:0.84rem;">Nenhuma amostra coletada ainda. Encoste em uma planta no mapa!</div>`;
+    return;
+  }
+  list.innerHTML = "";
+  state.inventory.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "inv-item";
+    div.innerHTML = `
+      <strong>${item.species}</strong><br>
+      <span style="color:var(--muted); font-style:italic;">Família: ${item.family}</span><br>
+      <span class="tag tag-${item.statusType}">${item.status}</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ================= CONTROLES DE MOVIMENTO =================
+function movePlayer(dx, dy) {
+  if (document.querySelector(".modal-backdrop.open")) return;
+  const p = mapEntities.player;
+  p.x = Math.max(20, Math.min(540, p.x + dx));
+  p.y = Math.max(20, Math.min(380, p.y + dy));
+  checkInteractions();
+}
+
+window.addEventListener("keydown", (e) => {
+  if (!document.getElementById("screenGame").classList.contains("active")) return;
+  const step = mapEntities.player.speed;
+  if (["ArrowUp", "w", "W"].includes(e.key)) { e.preventDefault(); movePlayer(0, -step); }
+  if (["ArrowDown", "s", "S"].includes(e.key)) { e.preventDefault(); movePlayer(0, step); }
+  if (["ArrowLeft", "a", "A"].includes(e.key)) { e.preventDefault(); movePlayer(-step, 0); }
+  if (["ArrowRight", "d", "D"].includes(e.key)) { e.preventDefault(); movePlayer(step, 0); }
+});
+
+document.querySelectorAll(".dpad button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const s = 22;
+    const d = btn.dataset.dir;
+    if (d === "up") movePlayer(0, -s);
+    if (d === "down") movePlayer(0, s);
+    if (d === "left") movePlayer(-s, 0);
+    if (d === "right") movePlayer(s, 0);
+  });
+});
+
+function dist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function checkInteractions() {
+  const p = mapEntities.player;
+
+  // Verifica colisão com plantas não coletadas
+  for (const pl of mapEntities.plants) {
+    if (!pl.collected && dist(p, pl) < 28) {
+      openCollectModal(pl);
+      return;
+    }
+  }
+
+  // Verifica colisão com áreas desmatadas
+  for (let i = 0; i < mapEntities.plots.length; i++) {
+    const plot = mapEntities.plots[i];
+    if (!plot.restored && dist(p, plot) < 32) {
+      openPlantModal(i);
+      return;
+    }
+  }
+}
+
+// ================= MODAL DE IDENTIFICAÇÃO TAXONÔMICA =================
+let cmSecondClueShown = false;
+
+function openCollectModal(plant) {
+  activeCollectPlant = plant;
+  cmSecondClueShown = false;
+
+  const phase = PHASES[state.phaseIndex];
+  document.getElementById("cmTitle").textContent = "🔍 Espécime Encontrado!";
+  document.getElementById("cmDifficulty").textContent = phase.level;
+  document.getElementById("cmIntro").textContent =
+    "Analise as características morfológicas deste exemplar silvestre e identifique sua família botânica para coletar amostras e sementes:";
+
+  const cluesDiv = document.getElementById("cmClues");
+  cluesDiv.innerHTML = `<div class="clue-box"><strong>Pista 1:</strong> ${plant.clues[0]}</div>`;
+
+  const hintBtn = document.getElementById("cmHintBtn");
+  hintBtn.style.display = "inline-block";
+  hintBtn.disabled = false;
+
+  const optsDiv = document.getElementById("cmOptions");
+  optsDiv.innerHTML = "";
+  const shuffled = [...plant.options].sort(() => Math.random() - 0.5);
+  shuffled.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "opt-btn";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => handleCollectAnswer(opt));
+    optsDiv.appendChild(btn);
+  });
+
+  const fb = document.getElementById("cmFeedback");
+  fb.style.display = "none";
+  document.getElementById("cmCloseBtn").style.display = "none";
+  document.getElementById("collectModal").classList.add("open");
+}
+
+document.getElementById("cmHintBtn").addEventListener("click", () => {
+  if (!activeCollectPlant || cmSecondClueShown) return;
+  cmSecondClueShown = true;
+  const cluesDiv = document.getElementById("cmClues");
+  cluesDiv.innerHTML += `<div class="clue-box"><strong>Pista 2:</strong> ${activeCollectPlant.clues[1]}</div>`;
+  document.getElementById("cmHintBtn").disabled = true;
+});
+
+function handleCollectAnswer(selectedFamily) {
+  const pl = activeCollectPlant;
+  const isRight = selectedFamily === pl.family;
+  document.querySelectorAll("#cmOptions .opt-btn").forEach(b => b.disabled = true);
+  document.getElementById("cmHintBtn").style.display = "none";
+
+  const fb = document.getElementById("cmFeedback");
+  fb.style.display = "block";
+
+  if (isRight) {
+    const pts = cmSecondClueShown ? 15 : 25;
+    state.score += pts;
+    pl.collected = true;
+    state.collectedInPhase++;
+    state.inventory.push(pl);
+    fb.className = "feedback-banner ok";
+    fb.innerHTML = `
+      <strong>✅ Identificação Correta (+${pts} pts)!</strong><br>
+      Espécie coletada: <strong>${pl.species}</strong> (<em>${pl.family}</em>)<br>
+      Classificação: <strong>${pl.status}</strong><br>
+      <p style="margin:6px 0 0;">${pl.eduNote}</p>
+    `;
+    renderInventory();
+    updateHUD();
+  } else {
+    state.health = Math.max(10, state.health - 10);
+    fb.className = "feedback-banner err";
+    fb.innerHTML = `
+      <strong>❌ Classificação Incorreta (-10% integridade)!</strong><br>
+      Você selecionou <em>${selectedFamily}</em>, mas este exemplar pertence à família <strong><em>${pl.family}</em></strong> (${pl.species}).<br>
+      Aproxime-se novamente no mapa para tentar coletar com atenção às pistas!
+    `;
+    // Afasta levemente o jogador para não reabrir imediatamente
+    mapEntities.player.x = Math.max(25, mapEntities.player.x - 32);
+    updateHUD();
+  }
+
+  document.getElementById("cmCloseBtn").style.display = "block";
+}
+
+document.getElementById("cmCloseBtn").addEventListener("click", () => {
+  document.getElementById("collectModal").classList.remove("open");
+  activeCollectPlant = null;
+});
+
+// ================= MODAL DE REPLANTIO E RESTAURAÇÃO =================
+function openPlantModal(plotIdx) {
+  activePlotIndex = plotIdx;
+  const choicesDiv = document.getElementById("pmChoices");
+  const fb = document.getElementById("pmFeedback");
+  fb.style.display = "none";
+  document.getElementById("pmDoneBtn").style.display = "none";
+
+  // Afasta levemente para evitar loop ao fechar
+  mapEntities.player.x = Math.max(25, mapEntities.player.x - 34);
+
+  if (state.inventory.length === 0) {
+    choicesDiv.innerHTML = `<p style="color:var(--accent); font-weight:700;">Sua mochila está vazia! Colete amostras de plantas silvestres antes de restaurar esta área.</p>`;
+    document.getElementById("plantModal").classList.add("open");
+    return;
+  }
+
+  choicesDiv.innerHTML = "";
+  state.inventory.forEach((item, idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "opt-btn";
+    btn.style.fontStyle = "normal";
+    btn.innerHTML = `
+      <div>
+        <strong>🌱 Plantar ${item.species}</strong> (<em>${item.family}</em>)<br>
+        <span class="tag tag-${item.statusType}">${item.status}</span>
+      </div>
+    `;
+    btn.addEventListener("click", () => handleReplantChoice(idx));
+    choicesDiv.appendChild(btn);
+  });
+
+  document.getElementById("plantModal").classList.add("open");
+}
+
+document.getElementById("pmCancel").addEventListener("click", () => {
+  document.getElementById("plantModal").classList.remove("open");
+});
+
+function handleReplantChoice(invIdx) {
+  const item = state.inventory[invIdx];
+  const fb = document.getElementById("pmFeedback");
+  fb.style.display = "block";
+  document.querySelectorAll("#pmChoices button").forEach(b => b.disabled = true);
+
+  if (item.canRestore) {
+    state.score += 30;
+    state.restoredInPhase++;
+    mapEntities.plots[activePlotIndex].restored = true;
+    mapEntities.plots[activePlotIndex].plantedName = item.species;
+    state.inventory.splice(invIdx, 1);
+
+    fb.className = "feedback-banner ok";
+    fb.innerHTML = `
+      <strong>🌳 Restauração Bem-Sucedida (+30 pts)!</strong><br>
+      Você replantou <strong>${item.species}</strong>, uma espécie nativa adequada ao ecossistema. O solo está recuperando sua cobertura vegetal!
+    `;
+    renderInventory();
+    updateHUD();
+  } else {
+    // Plantou espécie exótica invasora ou tóxica inadequada -> plantação vai por água abaixo!
+    state.health = Math.max(0, state.health - 25);
+    state.score = Math.max(0, state.score - 15);
+    state.inventory.splice(invIdx, 1);
+
+    fb.className = "feedback-banner err";
+    fb.innerHTML = `
+      <strong>⚠️ A plantação foi por água abaixo (-25% integridade, -15 pts)!</strong><br>
+      Você tentou restaurar a área com <strong>${item.species}</strong> (${item.status}).
+      Espécies exóticas invasoras ou inadequadas degradam o ecossistema e impedem o crescimento das plantas nativas!
+    `;
+    renderInventory();
+    updateHUD();
+  }
+
+  document.getElementById("pmDoneBtn").style.display = "block";
+}
+
+document.getElementById("pmDoneBtn").addEventListener("click", () => {
+  document.getElementById("plantModal").classList.remove("open");
+  checkPhaseOutcome();
+});
+
+function checkPhaseOutcome() {
+  const phase = PHASES[state.phaseIndex];
+  if (state.health <= 0) {
+    openEndModal(false);
+    return;
+  }
+  if (state.restoredInPhase >= phase.restoresNeeded) {
+    state.unlockedPhase = Math.max(state.unlockedPhase, Math.min(PHASES.length - 1, state.phaseIndex + 1));
+    saveProgress();
+    openEndModal(true);
+  }
+}
+
+function openEndModal(won) {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  const modal = document.getElementById("endModal");
+  const title = document.getElementById("emTitle");
+  const desc = document.getElementById("emDesc");
+  const nextBtn = document.getElementById("emNextBtn");
+
+  if (won) {
+    title.textContent = state.phaseIndex === PHASES.length - 1
+      ? "🏆 Expedição Botânica Concluída com Êxito!"
+      : `🎉 ${PHASES[state.phaseIndex].title} Concluída!`;
+    desc.textContent = `Você identificou as espécies corretas e restaurou com sucesso a área degradada! Pontuação acumulada: ${state.score} pontos.`;
+    nextBtn.style.display = state.phaseIndex < PHASES.length - 1 ? "inline-block" : "none";
+  } else {
+    title.textContent = "🥀 A Restauração Falhou!";
+    desc.textContent = "A integridade ambiental chegou a zero devido a ameaças ou escolhas inadequadas de manejo. Revise as características das espécies nativas e tente novamente!";
+    nextBtn.style.display = "none";
+  }
+  modal.classList.add("open");
+}
+
+document.getElementById("emNextBtn").addEventListener("click", () => {
+  document.getElementById("endModal").classList.remove("open");
+  startPhase(state.phaseIndex + 1);
+});
+document.getElementById("emRetryBtn").addEventListener("click", () => {
+  document.getElementById("endModal").classList.remove("open");
+  startPhase(state.phaseIndex);
+});
+document.getElementById("emMenuBtn").addEventListener("click", () => {
+  document.getElementById("endModal").classList.remove("open");
+  showScreen("screenMenu");
+});
+
+// ================= RENDERIZAÇÃO DO MAPA (CANVAS 2D) =================
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+function gameLoop() {
+  updateEnemies();
+  drawMap();
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+function updateEnemies() {
+  if (document.querySelector(".modal-backdrop.open")) return;
+  const p = mapEntities.player;
+
+  for (const en of mapEntities.enemies) {
+    en.x += en.vx;
+    en.y += en.vy;
+    if (en.x < 110 || en.x > 520) en.vx *= -1;
+    if (en.y < 30 || en.y > 370) en.vy *= -1;
+    if (en.cooldown > 0) en.cooldown--;
+
+    if (dist(p, en) < 24 && en.cooldown === 0) {
+      en.cooldown = 75;
+      state.health = Math.max(0, state.health - 20);
+      updateHUD();
+      showToast("🔥 Cuidado com focos de incêndio/pragas! (-20% integridade)");
+      if (state.health <= 0) {
+        openEndModal(false);
+        return;
+      }
+    }
+  }
+}
+
+function drawMap() {
+  const phase = PHASES[state.phaseIndex];
+  ctx.fillStyle = phase.bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grade sutil de campo
+  ctx.strokeStyle = "rgba(255,255,255,0.05)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+
+  // Faixa divisória visual: Zona de Coleta (esquerda) vs Zona Desmatada (direita)
+  ctx.fillStyle = "rgba(120, 72, 32, 0.22)";
+  ctx.fillRect(350, 0, 210, canvas.height);
+
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = "bold 12px Segoe UI, sans-serif";
+  ctx.fillText("🌲 ÁREA DE COLETA E ESTUDO", 16, 22);
+  ctx.fillText("🟫 ÁREA DESMATADA (REPLANTIO)", 362, 22);
+
+  // Desenha parcelas de replantio
+  for (const plot of mapEntities.plots) {
+    ctx.fillStyle = plot.restored ? "#1f6e3d" : "#6b4226";
+    ctx.strokeStyle = plot.restored ? "#2ecc71" : "#d97706";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(plot.x - 24, plot.y - 24, 48, 48, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = "22px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(plot.restored ? "🌳" : "🟫", plot.x, plot.y);
+  }
+
+  // Desenha plantas silvestres
+  for (const pl of mapEntities.plants) {
+    if (pl.collected) continue;
+    ctx.fillStyle = "rgba(46, 204, 113, 0.22)";
+    ctx.beginPath();
+    ctx.arc(pl.x, pl.y, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = "24px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const icon = pl.statusType === "toxica" ? "🪴" : (pl.species.includes("Dionaea") || pl.species.includes("Nepenthes") || pl.species.includes("Drosera") ? "🪰" : "🌿");
+    ctx.fillText(icon, pl.x, pl.y);
+  }
+
+  // Desenha ameaças ambientais (inimigos)
+  for (const en of mapEntities.enemies) {
+    ctx.font = "22px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🔥", en.x, en.y);
+  }
+
+  // Desenha o botânico explorador
+  const p = mapEntities.player;
+  ctx.fillStyle = "#3498db";
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.font = "22px serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🧑‍🔬", p.x, p.y);
+  ctx.textAlign = "left";
+}
+
+// Inicializa estado do botão Continuar ao carregar
+updateContinueButton();
+</script>
+</body>
+</html>
